@@ -1448,6 +1448,7 @@ document.getElementById('btn-mock').addEventListener('click', async () => {
     return;
   }
   const invMap = generateMockData();
+  if (!invMap) return;
   const records = Object.entries(invMap).map(([cellCode, inv]) => ({ cellCode, ...inv }));
   await dbClear('cells');
   await dbPutAll('cells', records);
@@ -1468,6 +1469,7 @@ document.getElementById('btn-clear').addEventListener('click', async ()=>{
 // ==========================================================
 // INVENTORY MANAGEMENT
 // ==========================================================
+try { // wrap in try-catch so init() always runs
 
 // ── Search ────────────────────────────────
 let searchTimeout;
@@ -1730,6 +1732,8 @@ document.getElementById('close-panel').addEventListener('click', () => {
   selectedInv = null;
   editMode = false;
 });
+
+} catch(e) { console.error('[StockMap] Management init error:', e); }
 
 // ==========================================================
 // CONFIG MODAL
