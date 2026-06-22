@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOCKMAP — Logistics Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ══ THEME VARIABLES ══════════════════════════════════════ */
+/* Default: Obsidian (dark industrial) */
+:root {
+  --bg: #070b0f;
+  --surface: #0c1219;
+  --surface2: #111820;
+  --border: #1c2733;
+  --border2: #243040;
+  --accent: #00e5ff;
+  --accent-rgb: 0,229,255;
+  --green: #2dff7a;
+  --yellow: #ffc93d;
+  --red: #ff3355;
+  --purple: #b44fff;
+  --orange: #ff6b35;
+  --text: #bccfde;
+  --text-dim: #3d5265;
+  --text-mid: #7a9ab5;
+  --mono: 'Space Mono', monospace;
+  --sans: 'Barlow Condensed', sans-serif;
+  --topbar-bg: rgba(7,11,15,0.96);
+  --panel-bg: rgba(7,11,15,0.98);
+  --legend-bg: rgba(12,18,25,0.92);
+  --fbtn-bg: rgba(7,11,15,0.88);
+  --scene-bg: #070b0f;
+  --scene-fog: #070b0f;
+  --floor-color: #050810;
+  --grid-color: #0c1a24;
+  --logo-color: #ffffff;
+  --radius: 0px;
+  --transition-theme: background 0.4s, color 0.4s, border-color 0.3s, box-shadow 0.3s;
+}
+
+/* ── THEME: Slate (dark premium) ── */
+[data-theme="slate"] {
+  --bg: #0f1117;
+  --surface: #161b27;
+  --surface2: #1c2236;
+  --border: #252d42;
+  --border2: #2e3a52;
+  --accent: #7c6fff;
+  --accent-rgb: 124,111,255;
+  --green: #34d97b;
+  --yellow: #f5a623;
+  --red: #f04f5f;
+  --purple: #c084fc;
+  --text: #d4daf0;
+  --text-dim: #434d6b;
+  --text-mid: #8090b8;
+  --topbar-bg: rgba(15,17,23,0.97);
+  --panel-bg: rgba(15,17,23,0.99);
+  --legend-bg: rgba(22,27,39,0.95);
+  --fbtn-bg: rgba(15,17,23,0.9);
+  --scene-bg: #0b0d14;
+  --scene-fog: #0b0d14;
+  --floor-color: #09090f;
+  --grid-color: #141828;
+  --logo-color: #ffffff;
+  --radius: 4px;
+}
+
+/* ── THEME: Ivory (light executive) ── */
+[data-theme="ivory"] {
+  --bg: #f4f1eb;
+  --surface: #ffffff;
+  --surface2: #f8f6f2;
+  --border: #ddd8ce;
+  --border2: #c9c3b8;
+  --accent: #b8860b;
+  --accent-rgb: 184,134,11;
+  --green: #2d7d52;
+  --yellow: #c17d00;
+  --red: #c0392b;
+  --purple: #7b5ea7;
+  --orange: #c0601a;
+  --text: #1a1611;
+  --text-dim: #9e9589;
+  --text-mid: #5a5248;
+  --topbar-bg: rgba(244,241,235,0.97);
+  --panel-bg: rgba(255,255,255,0.99);
+  --legend-bg: rgba(244,241,235,0.97);
+  --fbtn-bg: rgba(244,241,235,0.92);
+  --scene-bg: #e8e2d8;
+  --scene-fog: #e8e2d8;
+  --floor-color: #d8d2c5;
+  --grid-color: #ccc6ba;
+  --logo-color: #1a1611;
+  --radius: 2px;
+  --sans: 'Playfair Display', serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+/* ── THEME: Carbon (high contrast dark) ── */
+[data-theme="carbon"] {
+  --bg: #161616;
+  --surface: #1f1f1f;
+  --surface2: #262626;
+  --border: #3a3a3a;
+  --border2: #484848;
+  --accent: #f4d03f;
+  --accent-rgb: 244,208,63;
+  --green: #24a148;
+  --yellow: #f1c21b;
+  --red: #da1e28;
+  --purple: #8a3ffc;
+  --orange: #ff832b;
+  --text: #f4f4f4;
+  --text-dim: #525252;
+  --text-mid: #a8a8a8;
+  --topbar-bg: rgba(22,22,22,0.98);
+  --panel-bg: rgba(22,22,22,0.99);
+  --legend-bg: rgba(31,31,31,0.96);
+  --fbtn-bg: rgba(22,22,22,0.92);
+  --scene-bg: #111111;
+  --scene-fog: #111111;
+  --floor-color: #0d0d0d;
+  --grid-color: #1e1e1e;
+  --logo-color: #f4d03f;
+  --radius: 0px;
+  --sans: 'IBM Plex Mono', monospace;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+/* ── THEME: Arctic (light minimal) ── */
+[data-theme="arctic"] {
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #e8eef4;
+  --border: #cbd5e0;
+  --border2: #a0aec0;
+  --accent: #2563eb;
+  --accent-rgb: 37,99,235;
+  --green: #059669;
+  --yellow: #d97706;
+  --red: #dc2626;
+  --purple: #7c3aed;
+  --orange: #ea580c;
+  --text: #1a202c;
+  --text-dim: #a0aec0;
+  --text-mid: #4a5568;
+  --topbar-bg: rgba(255,255,255,0.97);
+  --panel-bg: rgba(255,255,255,0.99);
+  --legend-bg: rgba(240,244,248,0.97);
+  --fbtn-bg: rgba(240,244,248,0.92);
+  --scene-bg: #e2e8f0;
+  --scene-fog: #e2e8f0;
+  --floor-color: #d0d8e4;
+  --grid-color: #bcc8d8;
+  --logo-color: #1a202c;
+  --radius: 8px;
+  --sans: 'DM Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+/* ── THEME: Ember (warm dark) ── */
+[data-theme="ember"] {
+  --bg: #100d08;
+  --surface: #1a1410;
+  --surface2: #221c16;
+  --border: #3a2e22;
+  --border2: #4a3c2c;
+  --accent: #ff6b35;
+  --accent-rgb: 255,107,53;
+  --green: #4ade80;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --purple: #c084fc;
+  --orange: #fb923c;
+  --text: #e8d5c0;
+  --text-dim: #4a3c2c;
+  --text-mid: #8a7060;
+  --topbar-bg: rgba(16,13,8,0.97);
+  --panel-bg: rgba(16,13,8,0.99);
+  --legend-bg: rgba(26,20,16,0.95);
+  --fbtn-bg: rgba(16,13,8,0.9);
+  --scene-bg: #0a0806;
+  --scene-fog: #0a0806;
+  --floor-color: #080604;
+  --grid-color: #181208;
+  --logo-color: #ff6b35;
+  --radius: 3px;
+  --sans: 'Syne', sans-serif;
+  --mono: 'Space Mono', monospace;
+}
+
+/* ── THEME: Glacier (teal executive) ── */
+[data-theme="glacier"] {
+  --bg: #f7fafa;
+  --surface: #ffffff;
+  --surface2: #ecf4f4;
+  --border: #c8dede;
+  --border2: #a8c8c8;
+  --accent: #0d7377;
+  --accent-rgb: 13,115,119;
+  --green: #0d7377;
+  --yellow: #e08a00;
+  --red: #c0392b;
+  --purple: #6b48b4;
+  --orange: #c05c1a;
+  --text: #0d2020;
+  --text-dim: #a0b8b8;
+  --text-mid: #4a7070;
+  --topbar-bg: rgba(247,250,250,0.97);
+  --panel-bg: rgba(255,255,255,0.99);
+  --legend-bg: rgba(236,244,244,0.97);
+  --fbtn-bg: rgba(247,250,250,0.92);
+  --scene-bg: #daeaea;
+  --scene-fog: #daeaea;
+  --floor-color: #c8dede;
+  --grid-color: #b8d0d0;
+  --logo-color: #0d2020;
+  --radius: 6px;
+  --sans: 'Inter', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+/* ══ THEME PICKER ══════════════════════════════════════════ */
+#theme-picker {
+  position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+  display:flex; gap:6px; align-items:center;
+  background:var(--legend-bg); border:1px solid var(--border);
+  padding:8px 14px; z-index:150; backdrop-filter:blur(16px);
+  border-radius:calc(var(--radius) + 20px);
+  box-shadow:0 4px 24px rgba(0,0,0,0.3);
+  transition: var(--transition-theme);
+}
+#theme-picker .tp-label {
+  font-family:var(--mono); font-size:8px; letter-spacing:2px;
+  color:var(--text-dim); margin-right:4px; white-space:nowrap;
+  text-transform:uppercase;
+}
+.tp-swatch {
+  width:22px; height:22px; cursor:pointer;
+  border:2px solid transparent;
+  border-radius:50%;
+  transition:all .2s; position:relative;
+  flex-shrink:0;
+}
+.tp-swatch:hover { transform:scale(1.25); }
+.tp-swatch.active {
+  border-color:var(--text);
+  transform:scale(1.2);
+  box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--text);
+}
+.tp-swatch::after {
+  content: attr(data-name);
+  position:absolute; bottom:calc(100% + 8px); left:50%;
+  transform:translateX(-50%) scale(0);
+  background:var(--surface); border:1px solid var(--border2);
+  color:var(--text); font-family:var(--mono); font-size:8px;
+  letter-spacing:1px; padding:3px 7px; white-space:nowrap;
+  pointer-events:none; border-radius:var(--radius);
+  transition:transform .15s;
+}
+.tp-swatch:hover::after { transform:translateX(-50%) scale(1); }
+
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--sans); transition: var(--transition-theme); }
+#topbar, #panel, #legend, #modal, #config-modal, .fbtn, .tbtn, #tip, #toast { transition: background 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s; }
+
+/* ── TOPBAR ── */
+#topbar {
+  position:fixed; top:0; left:0; right:0; height:50px; min-height:50px;
+  background:var(--topbar-bg); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 18px; gap:16px; z-index:200;
+  backdrop-filter:blur(16px); overflow:hidden;
+}
+.logo { font-weight:900; font-size:18px; letter-spacing:4px; color:#fff; flex-shrink:0; white-space:nowrap; }
+.logo span { color:var(--accent); }
+
+#topbar-stats { display:flex; gap:14px; flex:1; overflow:hidden; min-width:0; }
+.stat { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--text-dim); white-space:nowrap; }
+.stat b { color:var(--text); font-size:12px; }
+.dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; animation:blink 2.5s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+#topbar-actions { display:flex; gap:8px; align-items:center; }
+.tbtn {
+  font-family:var(--sans); font-weight:700; font-size:11px; letter-spacing:1px;
+  padding:4px 12px; border:1px solid var(--border2); background:transparent;
+  color:var(--text-dim); cursor:pointer; transition:all .2s; text-transform:uppercase;
+  white-space:nowrap; flex-shrink:0; line-height:1.2;
+}
+.tbtn:hover { border-color:var(--accent); color:var(--accent); }
+.tbtn.primary { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,.06); }
+.tbtn.danger  { border-color:var(--red); color:var(--red); }
+
+/* ── CANVAS ── */
+#canvas { position:fixed; top:50px; left:0; width:100vw; height:calc(100vh - 50px); }
+
+/* ── FILTER BAR ── */
+#filterbar {
+  position:fixed; top:64px; left:18px; display:flex; gap:7px; z-index:100;
+}
+.fbtn {
+  font-family:var(--mono); font-size:9px; letter-spacing:1.5px; padding:4px 11px;
+  border:1px solid var(--border); background:var(--fbtn-bg);
+  color:var(--text-dim); cursor:pointer; transition:all .2s; text-transform:uppercase;
+  backdrop-filter:blur(8px);
+}
+.fbtn:hover { border-color:var(--accent); color:var(--accent); }
+.fbtn.active { background:rgba(0,229,255,.08); border-color:var(--accent); color:var(--accent); }
+
+/* ── DETAIL PANEL ── */
+#panel {
+  position:fixed; top:50px; right:0; width:310px; height:calc(100vh - 50px);
+  background:var(--panel-bg); border-left:1px solid var(--border);
+  transform:translateX(100%); transition:transform .32s cubic-bezier(.16,1,.3,1);
+  z-index:150; overflow-y:auto; backdrop-filter:blur(20px);
+}
+#panel.open { transform:translateX(0); }
+
+.ph { padding:18px; border-bottom:1px solid var(--border); position:relative; }
+.ph-loc { font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--text-dim); margin-bottom:5px; }
+.ph-sku { font-size:26px; font-weight:900; letter-spacing:2px; color:#fff; line-height:1; }
+.ph-name { font-size:14px; color:var(--text-dim); margin-top:4px; }
+.ph-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 9px; font-family:var(--mono); font-size:9px;
+  font-weight:700; letter-spacing:1.5px; margin-top:8px; border:1px solid;
+}
+.close-btn {
+  position:absolute; top:14px; right:14px; width:28px; height:28px;
+  border:1px solid var(--border); background:transparent; color:var(--text-dim);
+  cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;
+  transition:all .2s;
+}
+.close-btn:hover { border-color:var(--red); color:var(--red); }
+
+.ps { padding:14px 18px; border-bottom:1px solid var(--border); }
+.ps-label { font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--text-dim); margin-bottom:11px; }
+.dr { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+.dr:last-child { margin-bottom:0; }
+.dk { font-size:13px; font-weight:600; color:var(--text-mid); }
+.dv { font-family:var(--mono); font-size:11px; color:var(--text); text-align:right; }
+.dv.hi  { color:var(--accent); }
+.dv.ok  { color:var(--green); }
+.dv.wa  { color:var(--yellow); }
+.dv.er  { color:var(--red); }
+
+.qbar-wrap { margin-top:5px; }
+.qbar-track { height:4px; background:var(--border); }
+.qbar-fill  { height:100%; transition:width .5s cubic-bezier(.16,1,.3,1); }
+.qbar-lbl   { font-family:var(--mono); font-size:9px; color:var(--text-dim); margin-top:4px; display:flex; justify-content:space-between; }
+
+/* ── IMPORT MODAL ── */
+#modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:500;
+  display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(6px);
+}
+#modal-overlay.open { display:flex; }
+#modal {
+  background:var(--surface); border:1px solid var(--border2);
+  width:560px; max-width:95vw; max-height:88vh; overflow-y:auto;
+  border-radius:var(--radius);
+}
+.modal-header {
+  padding:20px 22px; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.modal-title { font-size:20px; font-weight:900; letter-spacing:2px; }
+.modal-body  { padding:22px; }
+.modal-footer { padding:16px 22px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+
+/* Drop zone */
+#dropzone {
+  border:2px dashed var(--border2); padding:36px 20px;
+  text-align:center; cursor:pointer; transition:all .2s; margin-bottom:18px;
+}
+#dropzone:hover, #dropzone.drag { border-color:var(--accent); background:rgba(0,229,255,.04); }
+#dropzone .dz-icon { font-size:36px; margin-bottom:10px; }
+#dropzone .dz-title { font-size:17px; font-weight:700; letter-spacing:1px; margin-bottom:4px; }
+#dropzone .dz-sub { font-size:12px; color:var(--text-dim); font-family:var(--mono); }
+#file-input { display:none; }
+
+/* Mapping table */
+#mapping-section { display:none; }
+.map-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
+.map-table th { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; color:var(--text-dim); text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); }
+.map-table td { padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.map-table select {
+  background:var(--bg); border:1px solid var(--border2); color:var(--text);
+  font-family:var(--mono); font-size:10px; padding:4px 6px; width:100%;
+}
+.map-table select:focus { outline:none; border-color:var(--accent); }
+.field-required { color:var(--red); font-size:9px; font-family:var(--mono); }
+.field-optional  { color:var(--text-dim); font-size:9px; font-family:var(--mono); }
+
+/* Preview table */
+#preview-section { display:none; margin-top:16px; }
+.preview-scroll { overflow-x:auto; }
+.preview-table { width:100%; border-collapse:collapse; font-size:11px; font-family:var(--mono); }
+.preview-table th { background:var(--surface2); padding:6px 8px; text-align:left; font-size:9px; letter-spacing:1px; color:var(--text-dim); border:1px solid var(--border); white-space:nowrap; }
+.preview-table td { padding:5px 8px; border:1px solid var(--border); color:var(--text-mid); white-space:nowrap; }
+.preview-table tr:hover td { background:rgba(0,229,255,.03); }
+
+/* Import result */
+#import-result { display:none; }
+.result-ok  { color:var(--green); font-family:var(--mono); font-size:13px; padding:12px; border:1px solid var(--green); background:rgba(45,255,122,.05); }
+.result-err { color:var(--red);   font-family:var(--mono); font-size:13px; padding:12px; border:1px solid var(--red); background:rgba(255,51,85,.05); }
+
+/* Config modal */
+#config-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:500;
+  display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(6px);
+}
+#config-modal-overlay.open { display:flex; }
+#config-modal {
+  background:var(--surface); border:1px solid var(--border2);
+  width:460px; max-width:95vw;
+}
+.config-row { display:flex; gap:14px; margin-bottom:14px; }
+.config-field { flex:1; }
+.config-field label { display:block; font-family:var(--mono); font-size:9px; letter-spacing:1.5px; color:var(--text-dim); margin-bottom:5px; }
+.config-field input, .config-field select {
+  width:100%; background:var(--bg); border:1px solid var(--border2);
+  color:var(--text); font-family:var(--mono); font-size:11px; padding:7px 10px;
+}
+.config-field input:focus, .config-field select:focus { outline:none; border-color:var(--accent); }
+
+/* Legend */
+#legend {
+  position:fixed; bottom:18px; left:18px;
+  background:var(--legend-bg); border:1px solid var(--border);
+  padding:12px 16px; z-index:100; backdrop-filter:blur(12px);
+}
+.leg-title { font-family:var(--mono); font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:9px; }
+.leg-item { display:flex; align-items:center; gap:9px; font-size:12px; font-weight:600; margin-bottom:5px; }
+.leg-item:last-child { margin:0; }
+.leg-box { width:12px; height:12px; border:1px solid rgba(255,255,255,.15); flex-shrink:0; }
+
+/* Controls hint */
+#hint { position:fixed; bottom:18px; right:18px; font-family:var(--mono); font-size:9px; color:var(--text-dim); line-height:2; text-align:right; z-index:100; }
+
+/* Tooltip */
+#tip {
+  position:fixed; background:var(--legend-bg); border:1px solid var(--border2);
+  padding:6px 11px; font-family:var(--mono); font-size:10px; color:var(--text);
+  pointer-events:none; z-index:300; display:none; white-space:nowrap;
+}
+#tip.on { display:block; }
+
+/* Toast */
+#toast {
+  position:fixed; bottom:60px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--surface); border:1px solid var(--border2);
+  padding:10px 20px; font-family:var(--mono); font-size:11px;
+  opacity:0; transition:all .3s; z-index:999; white-space:nowrap;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Loading */
+#loading {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:18px; z-index:999;
+  transition:opacity .5s;
+}
+.ld-logo { font-weight:900; font-size:32px; letter-spacing:8px; }
+.ld-logo span { color:var(--accent); }
+.ld-track { width:180px; height:2px; background:var(--border); }
+.ld-fill  { height:100%; background:var(--accent); width:0; animation:ldfill 1s ease forwards .2s; }
+@keyframes ldfill { to { width:100%; } }
+.ld-text { font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--text-dim); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border2); }
+
+/* No-data screen */
+#no-data {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  text-align:center; z-index:90; pointer-events:none;
+  display:none;
+}
+#no-data.show { display:block; }
+.nd-icon { font-size:52px; margin-bottom:14px; opacity:.3; }
+.nd-title { font-size:24px; font-weight:900; letter-spacing:3px; color:var(--text-dim); margin-bottom:6px; }
+.nd-sub { font-family:var(--mono); font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="ld-logo">STOCK<span>MAP</span></div>
+  <div class="ld-track"><div class="ld-fill"></div></div>
+  <div class="ld-text">INICIANDO SISTEMA...</div>
+</div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="logo">STOCK<span>MAP</span></div>
+  <div id="topbar-stats">
+    <div class="stat"><div class="dot" style="background:var(--green)"></div>OCUPADAS <b id="s-occ">—</b></div>
+    <div class="stat"><div class="dot" style="background:var(--text-dim)"></div>LIBRES <b id="s-free">—</b></div>
+    <div class="stat"><div class="dot" style="background:var(--yellow)"></div>POR VENCER <b id="s-exp">—</b></div>
+    <div class="stat"><div class="dot" style="background:var(--red)"></div>VENCIDOS <b id="s-exd">—</b></div>
+    <div class="stat"><div class="dot" style="background:var(--purple)"></div>RESERVADOS <b id="s-res">—</b></div>
+  </div>
+  <div id="topbar-actions">
+    <button class="tbtn" id="btn-config">⚙ DEPÓSITO</button>
+    <button class="tbtn primary" id="btn-import">↑ IMPORTAR EXCEL</button>
+    <button class="tbtn danger" id="btn-clear" style="display:none">✕ LIMPIAR</button>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div id="filterbar">
+  <button class="fbtn active" data-f="all">TODOS</button>
+  <button class="fbtn" data-f="occupied">OCUPADOS</button>
+  <button class="fbtn" data-f="free">LIBRES</button>
+  <button class="fbtn" data-f="expiring">POR VENCER</button>
+  <button class="fbtn" data-f="expired">VENCIDOS</button>
+  <button class="fbtn" data-f="reserved">RESERVADOS</button>
+</div>
+
+<!-- 3D Canvas -->
+<canvas id="canvas"></canvas>
+
+<!-- No data screen -->
+<div id="no-data">
+  <div class="nd-icon">📦</div>
+  <div class="nd-title">SIN DATOS</div>
+  <div class="nd-sub">IMPORTÁ UN EXCEL PARA COMENZAR</div>
+</div>
+
+<!-- Legend -->
+<div id="legend">
+  <div class="leg-title">ESTADO DE CELDAS</div>
+  <div class="leg-item"><div class="leg-box" style="background:var(--green)"></div>Ocupado</div>
+  <div class="leg-item"><div class="leg-box" style="background:#1a2530;border-color:#253545"></div>Libre</div>
+  <div class="leg-item"><div class="leg-box" style="background:var(--yellow)"></div>Por vencer</div>
+  <div class="leg-item"><div class="leg-box" style="background:var(--red)"></div>Vencido</div>
+  <div class="leg-item"><div class="leg-box" style="background:var(--purple)"></div>Reservado</div>
+</div>
+
+<!-- Theme Picker -->
+<div id="theme-picker">
+  <span class="tp-label">TEMA</span>
+  <div class="tp-swatch active" data-theme="obsidian" data-name="OBSIDIAN" style="background:linear-gradient(135deg,#070b0f 50%,#00e5ff 50%)"></div>
+  <div class="tp-swatch" data-theme="slate"    data-name="SLATE"    style="background:linear-gradient(135deg,#0f1117 50%,#7c6fff 50%)"></div>
+  <div class="tp-swatch" data-theme="ivory"    data-name="IVORY"    style="background:linear-gradient(135deg,#f4f1eb 50%,#b8860b 50%)"></div>
+  <div class="tp-swatch" data-theme="carbon"   data-name="CARBON"   style="background:linear-gradient(135deg,#161616 50%,#f4d03f 50%)"></div>
+  <div class="tp-swatch" data-theme="arctic"   data-name="ARCTIC"   style="background:linear-gradient(135deg,#f0f4f8 50%,#2563eb 50%)"></div>
+  <div class="tp-swatch" data-theme="ember"    data-name="EMBER"    style="background:linear-gradient(135deg,#100d08 50%,#ff6b35 50%)"></div>
+  <div class="tp-swatch" data-theme="glacier"  data-name="GLACIER"  style="background:linear-gradient(135deg,#f7fafa 50%,#0d7377 50%)"></div>
+</div>
+
+<!-- Controls hint -->
+<div id="hint">ARRASTRAR — rotar<br>SCROLL — zoom<br>CLICK — seleccionar</div>
+
+<!-- Tooltip -->
+<div id="tip"></div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Detail Panel -->
+<div id="panel">
+  <div class="ph">
+    <div class="ph-loc" id="p-loc">—</div>
+    <div class="ph-sku" id="p-sku">—</div>
+    <div class="ph-name" id="p-name">—</div>
+    <div class="ph-badge" id="p-badge">—</div>
+    <button class="close-btn" id="close-panel">✕</button>
+  </div>
+  <div class="ps">
+    <div class="ps-label">INVENTARIO</div>
+    <div class="dr"><span class="dk">Cantidad</span><span class="dv hi" id="p-qty">—</span></div>
+    <div class="dr"><span class="dk">Capacidad máx.</span><span class="dv" id="p-cap">—</span></div>
+    <div class="qbar-wrap">
+      <div class="qbar-track"><div class="qbar-fill" id="p-bar" style="width:0%"></div></div>
+      <div class="qbar-lbl"><span id="p-pct">0%</span><span>OCUPACIÓN</span></div>
+    </div>
+  </div>
+  <div class="ps">
+    <div class="ps-label">PRODUCTO</div>
+    <div class="dr"><span class="dk">SKU</span><span class="dv" id="p-sku2">—</span></div>
+    <div class="dr"><span class="dk">Categoría</span><span class="dv" id="p-cat">—</span></div>
+    <div class="dr"><span class="dk">Proveedor</span><span class="dv" id="p-sup">—</span></div>
+    <div class="dr"><span class="dk">Cód. barras</span><span class="dv" id="p-bar2">—</span></div>
+    <div class="dr"><span class="dk">Peso unit.</span><span class="dv" id="p-wgt">—</span></div>
+  </div>
+  <div class="ps">
+    <div class="ps-label">FECHAS</div>
+    <div class="dr"><span class="dk">Ingreso</span><span class="dv" id="p-entry">—</span></div>
+    <div class="dr"><span class="dk">Vencimiento</span><span class="dv" id="p-expd">—</span></div>
+    <div class="dr"><span class="dk">Última mov.</span><span class="dv" id="p-mov">—</span></div>
+  </div>
+  <div class="ps">
+    <div class="ps-label">LOGÍSTICA</div>
+    <div class="dr"><span class="dk">Destino</span><span class="dv" id="p-dest">—</span></div>
+    <div class="dr"><span class="dk">Orden</span><span class="dv" id="p-ord">—</span></div>
+  </div>
+</div>
+
+<!-- ═══ IMPORT MODAL ═══ -->
+<div id="modal-overlay">
+<div id="modal">
+  <div class="modal-header">
+    <div class="modal-title">IMPORTAR EXCEL</div>
+    <button class="close-btn" id="close-modal" style="position:relative;top:0;right:0">✕</button>
+  </div>
+  <div class="modal-body">
+
+    <!-- Step 1: drop file -->
+    <div id="step-upload">
+      <div id="dropzone">
+        <div class="dz-icon">📂</div>
+        <div class="dz-title">ARRASTRÁ TU ARCHIVO</div>
+        <div class="dz-sub">O HACÉ CLICK PARA SELECCIONAR · .xlsx · .xls · .csv</div>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.8;margin-top:4px;">
+        <b style="color:var(--text-mid)">Columnas reconocidas automáticamente:</b><br>
+        ubicacion · celda · posicion · cell_code<br>
+        sku · codigo · code · item_code<br>
+        descripcion · producto · nombre · product<br>
+        cantidad · stock · qty · stock_actual<br>
+        capacidad · capacity · stock_maximo<br>
+        vencimiento · expiry · fecha_vencimiento<br>
+        proveedor · supplier · destino · destination<br>
+        + más variantes en español e inglés
+      </div>
+    </div>
+
+    <!-- Step 2: map columns -->
+    <div id="step-map" style="display:none">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-mid);margin-bottom:14px;" id="file-info">—</div>
+      <div id="mapping-section">
+        <div class="ps-label" style="margin-bottom:8px">MAPEO DE COLUMNAS</div>
+        <table class="map-table">
+          <thead><tr><th>CAMPO STOCKMAP</th><th>COLUMNA EN TU ARCHIVO</th><th>ESTADO</th></tr></thead>
+          <tbody id="map-tbody"></tbody>
+        </table>
+      </div>
+      <div id="preview-section">
+        <div class="ps-label" style="margin:14px 0 8px">VISTA PREVIA (primeras 5 filas)</div>
+        <div class="preview-scroll"><table class="preview-table" id="preview-table"></table></div>
+      </div>
+    </div>
+
+    <!-- Step 3: result -->
+    <div id="import-result"></div>
+
+  </div>
+  <div class="modal-footer">
+    <button class="tbtn" id="modal-back" style="display:none">← VOLVER</button>
+    <button class="tbtn primary" id="modal-next">SIGUIENTE →</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══ CONFIG MODAL ═══ -->
+<div id="config-modal-overlay">
+<div id="config-modal">
+  <div class="modal-header">
+    <div class="modal-title">CONFIGURAR DEPÓSITO</div>
+    <button class="close-btn" id="close-config" style="position:relative;top:0;right:0">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="config-row">
+      <div class="config-field">
+        <label>NOMBRE DEL DEPÓSITO</label>
+        <input type="text" id="cfg-name" value="Depósito Principal">
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>UNIDADES DE RACK</label>
+        <input type="number" id="cfg-racks" value="4" min="1" max="20">
+      </div>
+      <div class="config-field">
+        <label>POSICIONES POR RACK (BAYS)</label>
+        <input type="number" id="cfg-bays" value="8" min="1" max="30">
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="config-field">
+        <label>NIVELES VERTICALES</label>
+        <input type="number" id="cfg-levels" value="5" min="1" max="12">
+      </div>
+      <div class="config-field">
+        <label>ANCHO DE PASILLO (m)</label>
+        <input type="number" id="cfg-aisle" value="2.0" min="1" max="5" step="0.5">
+      </div>
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;line-height:1.8;">
+      ⚠ CAMBIAR LA CONFIGURACIÓN REGENERA EL DEPÓSITO Y BORRA LOS DATOS ACTUALES
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="tbtn" id="close-config2">CANCELAR</button>
+    <button class="tbtn primary" id="apply-config">APLICAR Y REGENERAR</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ==========================================================
+// INDEXEDDB = persistent storage
+// ==========================================================
+const DB_NAME = 'stockmap', DB_VER = 1;
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('cells'))   d.createObjectStore('cells',   { keyPath: 'cellCode' });
+      if (!d.objectStoreNames.contains('config'))  d.createObjectStore('config',  { keyPath: 'key' });
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function dbPut(store, obj)  { return new Promise((res,rej)=>{ const t=db.transaction(store,'readwrite'); t.objectStore(store).put(obj); t.oncomplete=res; t.onerror=rej; }); }
+function dbGet(store, key)  { return new Promise((res,rej)=>{ const r=db.transaction(store).objectStore(store).get(key); r.onsuccess=()=>res(r.result); r.onerror=rej; }); }
+function dbGetAll(store)    { return new Promise((res,rej)=>{ const r=db.transaction(store).objectStore(store).getAll(); r.onsuccess=()=>res(r.result); r.onerror=rej; }); }
+function dbClear(store)     { return new Promise((res,rej)=>{ const t=db.transaction(store,'readwrite'); t.objectStore(store).clear(); t.oncomplete=res; t.onerror=rej; }); }
+function dbPutAll(store, items) { return new Promise((res,rej)=>{ const t=db.transaction(store,'readwrite'); const s=t.objectStore(store); items.forEach(i=>s.put(i)); t.oncomplete=res; t.onerror=rej; }); }
+
+// ==========================================================
+// WAREHOUSE CONFIG
+// ==========================================================
+let CFG = { rackUnits:4, bays:8, levels:5, cellW:1.1, cellH:0.9, cellD:0.85, gapX:.1, gapY:.1, rackDepth:.1, aisleWidth:2.0 };
+
+async function loadConfig() {
+  const saved = await dbGet('config','warehouse');
+  if (saved) Object.assign(CFG, saved.value);
+}
+async function saveConfig() {
+  await dbPut('config', { key:'warehouse', value: CFG });
+}
+
+// ==========================================================
+// STATUS HELPERS
+// ==========================================================
+const STATUS_COLOR = { occupied:0x2dff7a, free:0x1a2530, expiring:0xffc93d, expired:0xff3355, reserved:0xb44fff };
+const STATUS_EMISS = { occupied:0x003010, free:0x000000, expiring:0x302000, expired:0x300010, reserved:0x200030 };
+
+function getThemeStatusColors() {
+  const s = getComputedStyle(document.documentElement);
+  function c(v){ const hex=s.getPropertyValue(v).trim(); const tmp=document.createElement('canvas'); tmp.width=tmp.height=1; const x=tmp.getContext('2d'); x.fillStyle=hex; x.fillRect(0,0,1,1); const d=x.getImageData(0,0,1,1).data; return(d[0]<<16)|(d[1]<<8)|d[2]; }
+  const green=c('--green'), yellow=c('--yellow'), red=c('--red'), purple=c('--purple'), surface=c('--surface2');
+  return {
+    color: { occupied:green, free:surface, expiring:yellow, expired:red, reserved:purple },
+    emiss: { occupied:(green&0xfefefe)>>2, free:0, expiring:(yellow&0xfefefe)>>2, expired:(red&0xfefefe)>>2, reserved:(purple&0xfefefe)>>2 }
+  };
+}
+
+function getStatus(inv) {
+  if (!inv || !inv.sku) return 'free';
+  if (inv.reserved)     return 'reserved';
+  const now = Date.now();
+  if (inv.expiryDate) {
+    const exp = new Date(inv.expiryDate).getTime();
+    if (exp < now) return 'expired';
+    if (exp < now + 30*24*3600*1000) return 'expiring';
+  }
+  return 'occupied';
+}
+
+function fmtDate(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  if (isNaN(d)) return String(v);
+  return d.toLocaleDateString('es-PY', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+// ==========================================================
+// THREE.JS SETUP
+// ==========================================================
+const canvas  = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x070b0f);
+scene.fog = new THREE.FogExp2(0x070b0f, 0.020);
+
+function cssColorToHex(varName) {
+  const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  if (!val) return 0x000000;
+  const tmp = document.createElement('canvas');
+  tmp.width = tmp.height = 1;
+  const ctx = tmp.getContext('2d');
+  ctx.fillStyle = val;
+  ctx.fillRect(0,0,1,1);
+  const d = ctx.getImageData(0,0,1,1).data;
+  return (d[0]<<16)|(d[1]<<8)|d[2];
+}
+
+const camera = new THREE.PerspectiveCamera(52, 1, .1, 200);
+let sph = { theta:.8, phi:.85, radius:32 };
+const target = new THREE.Vector3(0,3,0);
+
+function resize() {
+  const w = innerWidth, h = innerHeight - 50;
+  renderer.setSize(w, h);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Lighting
+let ambLight, ptLightA, ptLightB, floorMesh, gridHelper;
+ambLight = new THREE.AmbientLight(0x0a1520, 3); scene.add(ambLight);
+const dir = new THREE.DirectionalLight(0xffffff, 1.4);
+dir.position.set(15,20,10); dir.castShadow = true;
+dir.shadow.mapSize.set(2048,2048);
+dir.shadow.camera.left=-30; dir.shadow.camera.right=30; dir.shadow.camera.top=30; dir.shadow.camera.bottom=-30;
+scene.add(dir);
+ptLightA = new THREE.PointLight(0x00e5ff, 1.4, 35); ptLightA.position.set(-6,8,0); scene.add(ptLightA);
+ptLightB = new THREE.PointLight(0x0044ff, .8, 28);  ptLightB.position.set(14,6,4); scene.add(ptLightB);
+
+// Floor
+floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(80,80), new THREE.MeshStandardMaterial({color:0x050810,roughness:.95}));
+floorMesh.rotation.x = -Math.PI/2; floorMesh.receiveShadow = true; scene.add(floorMesh);
+gridHelper = new THREE.GridHelper(80, 80, 0x0c1a24, 0x0c1a24); scene.add(gridHelper);
+
+// Orbit
+let dragging=false, prevM={x:0,y:0}, mouseMoved=false;
+canvas.addEventListener('mousedown', e=>{ if(e.button===0){ dragging=true; prevM={x:e.clientX,y:e.clientY}; mouseMoved=false; }});
+window.addEventListener('mouseup', ()=>{ dragging=false; });
+window.addEventListener('mousemove', e=>{
+  if(!dragging) return;
+  mouseMoved=true;
+  sph.theta -= (e.clientX-prevM.x)*.008;
+  sph.phi = Math.max(.12, Math.min(Math.PI/2.1, sph.phi+(e.clientY-prevM.y)*.006));
+  prevM={x:e.clientX,y:e.clientY};
+  updateCam();
+});
+canvas.addEventListener('wheel', e=>{ sph.radius=Math.max(5,Math.min(60,sph.radius+e.deltaY*.04)); updateCam(); e.preventDefault(); },{passive:false});
+
+function updateCam() {
+  const sp=Math.sin(sph.phi);
+  camera.position.set(target.x+sph.radius*sp*Math.sin(sph.theta), target.y+sph.radius*Math.cos(sph.phi), target.z+sph.radius*sp*Math.cos(sph.theta));
+  camera.lookAt(target);
+}
+updateCam();
+
+// ==========================================================
+// WAREHOUSE BUILDER
+// ==========================================================
+let meshes=[], cellMap={}, warehouseGroup=null;
+const cellGeo = new THREE.BoxGeometry(1,1,1);
+const beamMat = new THREE.MeshStandardMaterial({color:0x18283a,roughness:.85,metalness:.45});
+const backMat = new THREE.MeshStandardMaterial({color:0x0e1b27,roughness:.95,metalness:.1});
+
+function buildWarehouse(inventoryMap={}) {
+  // Remove old warehouse
+  if (warehouseGroup) { scene.remove(warehouseGroup); warehouseGroup.traverse(o=>{ if(o.geometry && o!==warehouseGroup) o.geometry.dispose(); }); }
+  meshes=[]; cellMap={};
+  warehouseGroup = new THREE.Group();
+
+  const { rackUnits, bays, levels, cellW, cellH, cellD, gapX, gapY, rackDepth, aisleWidth } = CFG;
+  const bayStride   = cellW + gapX;
+  const rackTotalD  = cellD*2 + rackDepth;
+  const rackStride  = rackTotalD + aisleWidth;
+  const totalX      = bays * bayStride;
+  const totalZ      = rackUnits * rackStride;
+  const rackHeight  = levels*(cellH+gapY)+.1;
+
+  for (let ru=0; ru<rackUnits; ru++) {
+    const zCenter = ru*rackStride - totalZ/2 + rackTotalD/2;
+
+    for (let bay=0; bay<bays; bay++) {
+      const x = bay*bayStride - totalX/2 + cellW/2;
+
+      for (let lvl=0; lvl<levels; lvl++) {
+        const y = lvl*(cellH+gapY) + cellH/2;
+
+        for (let side=0; side<2; side++) {
+          const zOff = side===0 ? -(cellD/2+rackDepth/2) : (cellD/2+rackDepth/2);
+          const z = zCenter + zOff;
+          const sideL = side===0?'A':'B';
+          const cellCode = `R${String(ru+1).padStart(2,'0')}-B${String(bay+1).padStart(2,'0')}-L${lvl+1}${sideL}`;
+
+          const inv = inventoryMap[cellCode] || null;
+          const status = getStatus(inv);
+
+          const tc = getThemeStatusColors();
+          const mat = new THREE.MeshStandardMaterial({
+            color:   tc.color[status],
+            emissive:tc.emiss[status],
+            roughness: status==='free'?.95:.55,
+            metalness: status==='free'?0:.28,
+            transparent:true,
+            opacity: status==='free'?.22:.9,
+          });
+
+          const mesh = new THREE.Mesh(cellGeo, mat);
+          mesh.scale.set(cellW-.07, cellH-.07, cellD-.07);
+          mesh.position.set(x,y,z);
+          mesh.castShadow = true;
+          mesh.userData = { cellCode, ru, bay, lvl, side:sideL, status, inv };
+
+          warehouseGroup.add(mesh);
+          meshes.push(mesh);
+          cellMap[cellCode] = mesh;
+        }
+      }
+
+      // Back panel per bay
+      for (let lvl=0; lvl<levels; lvl++) {
+        const y = lvl*(cellH+gapY)+cellH/2;
+        const bp = new THREE.Mesh(new THREE.BoxGeometry(cellW-.05, cellH-.05, rackDepth), backMat);
+        bp.position.set(x, y, zCenter);
+        warehouseGroup.add(bp);
+      }
+    }
+
+    // Vertical posts
+    const postGeo = new THREE.BoxGeometry(.07, rackHeight, .07);
+    for (let bay=0; bay<=bays; bay++) {
+      const px = bay*bayStride - totalX/2 - gapX/2;
+      [[0,'front'],[1,'back'],[.5,'mid']].forEach(([frac, lbl])=>{
+        const pz = zCenter + (frac===.5 ? 0 : (frac===0?-1:1)*(cellD+rackDepth/2));
+        const post = new THREE.Mesh(postGeo, beamMat);
+        post.position.set(px, rackHeight/2, pz);
+        warehouseGroup.add(post);
+      });
+    }
+  }
+
+  scene.add(warehouseGroup);
+  updateStats(inventoryMap);
+}
+
+function updateStats(invMap) {
+  const now = Date.now(), in30 = now+30*24*3600*1000;
+  let occ=0, free=0, exp=0, exd=0, res=0;
+  meshes.forEach(m=>{
+    switch(m.userData.status){
+      case 'occupied': occ++; break;
+      case 'free':     free++;break;
+      case 'expiring': exp++; break;
+      case 'expired':  exd++; break;
+      case 'reserved': res++; break;
+    }
+  });
+  document.getElementById('s-occ').textContent  = occ;
+  document.getElementById('s-free').textContent = free;
+  document.getElementById('s-exp').textContent  = exp;
+  document.getElementById('s-exd').textContent  = exd;
+  document.getElementById('s-res').textContent  = res;
+
+  const hasData = occ+exp+exd+res > 0;
+  document.getElementById('no-data').classList.toggle('show', !hasData);
+  document.getElementById('btn-clear').style.display = hasData ? '' : 'none';
+}
+
+// ==========================================================
+// RAYCASTING = hover + click
+// ==========================================================
+const ray = new THREE.Raycaster();
+const mouse2d = new THREE.Vector2();
+const tip = document.getElementById('tip');
+let hovMesh=null, selMesh=null, activeFilter='all';
+
+function getVisibleMeshes() {
+  return meshes.filter(m => activeFilter==='all' || m.userData.status===activeFilter);
+}
+
+window.addEventListener('mousemove', e=>{
+  if(dragging) return;
+  const rect = canvas.getBoundingClientRect();
+  mouse2d.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  mouse2d.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  ray.setFromCamera(mouse2d, camera);
+  const hits = ray.intersectObjects(getVisibleMeshes());
+
+  if(hits.length){
+    const h=hits[0].object;
+    if(hovMesh!==h){ if(hovMesh&&hovMesh!==selMesh) hovMesh.scale.set(...scaleFor(hovMesh,1)); hovMesh=h; if(h!==selMesh) h.scale.set(...scaleFor(h,1.07)); }
+    const d=h.userData;
+    tip.innerHTML = `<b>${d.cellCode}</b> | ${d.status.toUpperCase()}${d.inv?.sku? ' - '+d.inv.sku:''}`;
+    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-10)+'px';
+    tip.classList.add('on'); canvas.style.cursor='pointer';
+  } else {
+    if(hovMesh&&hovMesh!==selMesh) hovMesh.scale.set(...scaleFor(hovMesh,1));
+    hovMesh=null; tip.classList.remove('on'); canvas.style.cursor='default';
+  }
+});
+
+canvas.addEventListener('mousedown', ()=>{ mouseMoved=false; });
+canvas.addEventListener('mouseup', e=>{
+  if(mouseMoved) return;
+  const rect=canvas.getBoundingClientRect();
+  mouse2d.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse2d.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  ray.setFromCamera(mouse2d, camera);
+  const hits=ray.intersectObjects(meshes);
+  if(hits.length){
+    if(selMesh&&selMesh!==hits[0].object) selMesh.scale.set(...scaleFor(selMesh,1));
+    selMesh=hits[0].object;
+    selMesh.scale.set(...scaleFor(selMesh,1.14));
+    openPanel(selMesh.userData);
+  }
+});
+
+function scaleFor(m, f) {
+  const {cellW,cellH,cellD}=CFG;
+  return [(cellW-.07)*f,(cellH-.07)*f,(cellD-.07)*f];
+}
+
+// ==========================================================
+// DETAIL PANEL
+// ==========================================================
+function openPanel(ud) {
+  const {cellCode,ru,bay,lvl,side,status,inv}=ud;
+  const panel = document.getElementById('panel');
+
+  document.getElementById('p-loc').textContent = `RACK ${ru+1} - BAY ${bay+1} - NIVEL ${lvl+1} - LADO ${side}`;
+  document.getElementById('p-sku').textContent  = status==='free'?'VACÍO':(inv?.sku||'—');
+  document.getElementById('p-name').textContent = status==='free'?'Celda disponible':(inv?.productName||inv?.descripcion||inv?.producto||'—');
+
+  const badgeCfg = {
+    occupied:{l:'OCUPADO',c:'var(--green)'},free:{l:'LIBRE',c:'var(--text-dim)'},
+    expiring:{l:'POR VENCER',c:'var(--yellow)'},expired:{l:'VENCIDO',c:'var(--red)'},reserved:{l:'RESERVADO',c:'var(--purple)'}
+  };
+  const bc=badgeCfg[status];
+  const badge=document.getElementById('p-badge');
+  badge.textContent=bc.l; badge.style.color=bc.c; badge.style.borderColor=bc.c;
+
+  if(status==='free'||!inv){
+    ['p-qty','p-cap','p-sku2','p-cat','p-sup','p-bar2','p-wgt','p-entry','p-expd','p-mov','p-dest','p-ord']
+      .forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('p-bar').style.width='0%';
+    document.getElementById('p-pct').textContent='0%';
+  } else {
+    const qty=parseInt(inv.quantity||inv.cantidad||0);
+    const cap=parseInt(inv.maxCapacity||inv.capacidad||50);
+    const pct=Math.round((qty/cap)*100);
+    document.getElementById('p-qty').textContent=qty+' uds';
+    document.getElementById('p-cap').textContent=cap+' uds';
+    document.getElementById('p-bar').style.width=pct+'%';
+    document.getElementById('p-bar').style.background=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+    document.getElementById('p-pct').textContent=pct+'%';
+
+    document.getElementById('p-sku2').textContent=inv.sku||'—';
+    document.getElementById('p-cat').textContent=inv.category||inv.categoria||'—';
+    document.getElementById('p-sup').textContent=inv.supplier||inv.proveedor||'—';
+    document.getElementById('p-bar2').textContent=inv.barcode||inv.codigo_barras||'—';
+    document.getElementById('p-wgt').textContent=inv.weight||inv.peso?((inv.weight||inv.peso)+' kg'):'—';
+    document.getElementById('p-entry').textContent=fmtDate(inv.entryDate||inv.ingreso)||'—';
+
+    const expEl=document.getElementById('p-expd');
+    const expVal=inv.expiryDate||inv.vencimiento||inv.caducidad||inv.expiry;
+    expEl.textContent=fmtDate(expVal)||'—';
+    if(expVal){
+      const diff=Math.round((new Date(expVal)-Date.now())/(86400000));
+      expEl.className='dv '+(diff<0?'er':diff<30?'wa':'ok');
+    } else expEl.className='dv';
+
+    document.getElementById('p-mov').textContent=fmtDate(inv.lastMovement||inv.ultima_mov)||'—';
+    document.getElementById('p-dest').textContent=inv.destination||inv.destino||'—';
+    document.getElementById('p-ord').textContent=inv.orderRef||inv.orden||'—';
+  }
+
+  panel.classList.add('open');
+}
+
+document.getElementById('close-panel').addEventListener('click', ()=>{
+  document.getElementById('panel').classList.remove('open');
+  if(selMesh){ selMesh.scale.set(...scaleFor(selMesh,1)); selMesh=null; }
+});
+
+// ==========================================================
+// FILTERS
+// ==========================================================
+document.querySelectorAll('.fbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter=btn.dataset.f;
+    meshes.forEach(m=>{ m.visible = activeFilter==='all'||m.userData.status===activeFilter; });
+  });
+});
+
+// ==========================================================
+// EXCEL IMPORT
+// ==========================================================
+
+// Auto-detect column mapping from Excel headers
+const FIELD_ALIASES = {
+  cellCode:    ['ubicacion','celda','posicion','cell','location','cell_code','ubicación'],
+  sku:         ['sku','codigo','code','item_code','producto_id','cod','código'],
+  productName: ['descripcion','producto','nombre','description','product','name','descripción'],
+  quantity:    ['cantidad','stock','qty','quantity','stock_actual'],
+  maxCapacity: ['capacidad','capacity','max','stock_maximo','max_capacity','stock_máximo'],
+  expiryDate:  ['vencimiento','caducidad','expiry','expiry_date','fecha_vencimiento','fecha vencimiento'],
+  supplier:    ['proveedor','supplier','vendor'],
+  destination: ['destino','destination','cliente'],
+  orderRef:    ['orden','order','remito','order_ref','nro_orden'],
+  category:    ['categoria','category','rubro','categoría'],
+  barcode:     ['barcode','codigo_barras','ean','gtin','cód. barras'],
+  weight:      ['peso','weight','kg'],
+  reserved:    ['reservado','reserved'],
+  entryDate:   ['ingreso','entry','entry_date','fecha_ingreso','fecha ingreso'],
+  lastMovement:['ultima_mov','last_movement','ultima movimiento'],
+};
+
+function autoMap(headers) {
+  const low = headers.map(h=>(h||'').toLowerCase().trim());
+  const map = {};
+  for(const [field, aliases] of Object.entries(FIELD_ALIASES)){
+    const match = aliases.find(a=>low.includes(a));
+    if(match) map[field] = headers[low.indexOf(match)];
+  }
+  return map;
+}
+
+let importState = { step:0, rows:[], headers:[], mapping:{} };
+
+function openImportModal() {
+  importState = { step:0, rows:[], headers:[], mapping:{} };
+  document.getElementById('step-upload').style.display='';
+  document.getElementById('step-map').style.display='none';
+  document.getElementById('import-result').style.display='none';
+  document.getElementById('modal-back').style.display='none';
+  document.getElementById('modal-next').textContent='SIGUIENTE →';
+  document.getElementById('modal-next').disabled=false;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+document.getElementById('btn-import').addEventListener('click', openImportModal);
+document.getElementById('close-modal').addEventListener('click', ()=>document.getElementById('modal-overlay').classList.remove('open'));
+
+// Drag & drop
+const dz = document.getElementById('dropzone');
+dz.addEventListener('click', ()=>document.getElementById('file-input').click());
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+document.getElementById('file-input').addEventListener('change', e=>handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(ws, { defval:null, raw:false });
+
+    if(!raw.length){ showToast('❌ El archivo está vacío'); return; }
+
+    importState.rows    = raw;
+    importState.headers = Object.keys(raw[0]);
+    importState.mapping = autoMap(importState.headers);
+    importState.step    = 1;
+    showMappingStep(file.name, raw.length);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showMappingStep(filename, total) {
+  document.getElementById('step-upload').style.display='none';
+  document.getElementById('step-map').style.display='';
+  document.getElementById('import-result').style.display='none';
+  document.getElementById('modal-back').style.display='';
+  document.getElementById('modal-next').textContent='IMPORTAR ↑';
+
+  document.getElementById('file-info').textContent=`${filename} - ${total} filas encontradas`;
+
+  // Build mapping table
+  const FIELDS = [
+    {key:'cellCode',    label:'Ubicación / Celda',     req:true},
+    {key:'sku',         label:'SKU / Código',           req:true},
+    {key:'productName', label:'Nombre del producto',    req:false},
+    {key:'quantity',    label:'Cantidad',               req:false},
+    {key:'maxCapacity', label:'Capacidad máxima',       req:false},
+    {key:'expiryDate',  label:'Fecha de vencimiento',   req:false},
+    {key:'supplier',    label:'Proveedor',              req:false},
+    {key:'destination', label:'Destino',                req:false},
+    {key:'orderRef',    label:'Número de orden',        req:false},
+    {key:'category',    label:'Categoría',              req:false},
+    {key:'barcode',     label:'Código de barras',       req:false},
+    {key:'weight',      label:'Peso (kg)',              req:false},
+    {key:'reserved',    label:'Reservado (true/false)', req:false},
+    {key:'entryDate',   label:'Fecha de ingreso',       req:false},
+  ];
+
+  const tbody = document.getElementById('map-tbody');
+  tbody.innerHTML='';
+  FIELDS.forEach(({key,label,req})=>{
+    const sel=`<select data-field="${key}">
+      <option value="">— no mapear —</option>
+      ${importState.headers.map(h=>`<option value="${h}" ${importState.mapping[key]===h?'selected':''}>${h}</option>`).join('')}
+    </select>`;
+    tbody.innerHTML+=`<tr>
+      <td>${label}</td>
+      <td>${sel}</td>
+      <td>${req?'<span class="field-required">REQUERIDO</span>':'<span class="field-optional">opcional</span>'}</td>
+    </tr>`;
+  });
+  document.getElementById('mapping-section').style.display='';
+
+  // Preview
+  showPreview();
+}
+
+function showPreview() {
+  const pv = document.getElementById('preview-section');
+  const rows = importState.rows.slice(0,5);
+  const headers = importState.headers;
+  let html='<thead><tr>'+headers.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{ html+='<tr>'+headers.map(h=>`<td>${r[h]??''}</td>`).join('')+'</tr>'; });
+  html+='</tbody>';
+  document.getElementById('preview-table').innerHTML=html;
+  pv.style.display='';
+}
+
+document.getElementById('modal-back').addEventListener('click', ()=>{
+  document.getElementById('step-upload').style.display='';
+  document.getElementById('step-map').style.display='none';
+  document.getElementById('import-result').style.display='none';
+  document.getElementById('modal-back').style.display='none';
+  document.getElementById('modal-next').textContent='SIGUIENTE →';
+  importState.step=0;
+});
+
+document.getElementById('modal-next').addEventListener('click', async ()=>{
+  if(importState.step===0) return;
+  if(importState.step===1) {
+    // Collect mapping from selects
+    document.querySelectorAll('#map-tbody select').forEach(sel=>{
+      const field=sel.dataset.field, col=sel.value;
+      if(col) importState.mapping[field]=col; else delete importState.mapping[field];
+    });
+    if(!importState.mapping.cellCode){ showToast('❌ Debes mapear la columna de Ubicación'); return; }
+    if(!importState.mapping.sku){ showToast('❌ Debes mapear la columna de SKU'); return; }
+    await doImport();
+  }
+});
+
+async function doImport() {
+  const { rows, mapping } = importState;
+  const invMap = {};
+  let ok=0, errs=[];
+
+  rows.forEach((raw,i)=>{
+    const normalized={};
+    for(const [field,col] of Object.entries(mapping)) normalized[field]=raw[col]??null;
+    const cc=normalized.cellCode;
+    if(!cc){ errs.push(`Fila ${i+2}: sin cellCode`); return; }
+    invMap[cc]=normalized;
+    ok++;
+  });
+
+  // Save to IndexedDB
+  const records = Object.entries(invMap).map(([cellCode,inv])=>({ cellCode, ...inv }));
+  await dbClear('cells');
+  await dbPutAll('cells', records);
+
+  // Rebuild 3D
+  buildWarehouse(invMap);
+
+  // Show result
+  document.getElementById('step-map').style.display='none';
+  document.getElementById('modal-back').style.display='none';
+  document.getElementById('modal-next').style.display='none';
+  const res=document.getElementById('import-result');
+  res.style.display='';
+  res.innerHTML=`<div class="result-ok">
+    ✅ IMPORTACIÓN EXITOSA<br><br>
+    ${ok} registros importados al depósito 3D.<br>
+    ${errs.length?`! ${errs.length} filas con errores omitidas.`:''}<br><br>
+    Los datos se guardaron localmente y persisten al recargar la página.
+  </div>`;
+
+  showToast(`OK: ${ok} celdas importadas`);
+  importState.step=2;
+
+  setTimeout(()=>document.getElementById('modal-overlay').classList.remove('open'), 2200);
+}
+
+// ==========================================================
+// CLEAR DATA
+// ==========================================================
+document.getElementById('btn-clear').addEventListener('click', async ()=>{
+  if(!confirm('¿Limpiar todos los datos del depósito?')) return;
+  await dbClear('cells');
+  buildWarehouse({});
+  showToast('🗑 Datos limpiados');
+});
+
+// ==========================================================
+// CONFIG MODAL
+// ==========================================================
+document.getElementById('btn-config').addEventListener('click', ()=>{
+  document.getElementById('cfg-racks').value  = CFG.rackUnits;
+  document.getElementById('cfg-bays').value   = CFG.bays;
+  document.getElementById('cfg-levels').value = CFG.levels;
+  document.getElementById('cfg-aisle').value  = CFG.aisleWidth;
+  document.getElementById('config-modal-overlay').classList.add('open');
+});
+['close-config','close-config2'].forEach(id=>
+  document.getElementById(id).addEventListener('click', ()=>document.getElementById('config-modal-overlay').classList.remove('open'))
+);
+document.getElementById('apply-config').addEventListener('click', async ()=>{
+  CFG.rackUnits  = parseInt(document.getElementById('cfg-racks').value)||4;
+  CFG.bays       = parseInt(document.getElementById('cfg-bays').value)||8;
+  CFG.levels     = parseInt(document.getElementById('cfg-levels').value)||5;
+  CFG.aisleWidth = parseFloat(document.getElementById('cfg-aisle').value)||2.0;
+  await saveConfig();
+  await dbClear('cells');
+  buildWarehouse({});
+  document.getElementById('config-modal-overlay').classList.remove('open');
+  showToast('✅ Depósito reconfigurado');
+});
+
+// ==========================================================
+// TOAST
+// ==========================================================
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ==========================================================
+// ANIMATION LOOP
+// ==========================================================
+let t=0;
+function animate() {
+  requestAnimationFrame(animate);
+  t+=.012;
+  ptLightA.intensity = 1.2+Math.sin(t*.6)*.3;
+  ptLightA.position.x = -6+Math.sin(t*.25)*2;
+  if(selMesh){ const s=1.14+Math.sin(t*4)*.018; selMesh.scale.set(...scaleFor(selMesh,s/1.14)); }
+  renderer.render(scene, camera);
+}
+
+// ==========================================================
+// THEME SYSTEM
+// ==========================================================
+const THEMES = ['obsidian','slate','ivory','carbon','arctic','ember','glacier'];
+
+const THEME_3D = {
+  obsidian: { bg:0x070b0f, fog:0x070b0f, floor:0x050810, grid:0x0c1a24, ambInt:3, ptAColor:0x00e5ff, ptBColor:0x0044ff },
+  slate:    { bg:0x0b0d14, fog:0x0b0d14, floor:0x09090f, grid:0x141828, ambInt:2.8, ptAColor:0x7c6fff, ptBColor:0x4030ff },
+  ivory:    { bg:0xe8e2d8, fog:0xe8e2d8, floor:0xd8d2c5, grid:0xccc6ba, ambInt:5,   ptAColor:0xb8860b, ptBColor:0xd4a520 },
+  carbon:   { bg:0x111111, fog:0x111111, floor:0x0d0d0d, grid:0x1e1e1e, ambInt:2.5, ptAColor:0xf4d03f, ptBColor:0xc0a030 },
+  arctic:   { bg:0xe2e8f0, fog:0xe2e8f0, floor:0xd0d8e4, grid:0xbcc8d8, ambInt:5.5, ptAColor:0x2563eb, ptBColor:0x7c3aed },
+  ember:    { bg:0x0a0806, fog:0x0a0806, floor:0x080604, grid:0x181208, ambInt:2,   ptAColor:0xff6b35, ptBColor:0xff4010 },
+  glacier:  { bg:0xdaeaea, fog:0xdaeaea, floor:0xc8dede, grid:0xb8d0d0, ambInt:5,   ptAColor:0x0d7377, ptBColor:0x14a0a8 },
+};
+
+let currentTheme = 'obsidian';
+
+function applyTheme3D(name) {
+  const t = THEME_3D[name] || THEME_3D.obsidian;
+  scene.background = new THREE.Color(t.bg);
+  scene.fog = new THREE.FogExp2(t.fog, 0.018);
+  if(ambLight)  ambLight.intensity = t.ambInt;
+  if(ptLightA)  { ptLightA.color.setHex(t.ptAColor); }
+  if(ptLightB)  { ptLightB.color.setHex(t.ptBColor); }
+  if(floorMesh) floorMesh.material.color.setHex(t.floor);
+  if(gridHelper){ gridHelper.material.color.setHex(t.grid); }
+}
+
+function applyTheme(name) {
+  if(!THEMES.includes(name)) return;
+  currentTheme = name;
+
+  // CSS vars
+  document.documentElement.removeAttribute('data-theme');
+  if(name !== 'obsidian') document.documentElement.setAttribute('data-theme', name);
+
+  // 3D scene
+  applyTheme3D(name);
+
+  // Rebuild warehouse with new theme colors
+  loadAllCells().then(invMap => buildWarehouse(invMap));
+
+  // Logo color
+  const logoEl = document.querySelector('.logo');
+  if(logoEl) {
+    const lc = getComputedStyle(document.documentElement).getPropertyValue('--logo-color').trim();
+    logoEl.style.color = lc;
+  }
+
+  // Swatch active state
+  document.querySelectorAll('.tp-swatch').forEach(s => s.classList.toggle('active', s.dataset.theme===name));
+
+  // Persist
+  try { localStorage.setItem('sm_theme', name); } catch(e){}
+}
+
+async function loadAllCells() {
+  const saved = await dbGetAll('cells');
+  const invMap = {};
+  saved.forEach(r=>{ const {cellCode,...inv}=r; invMap[cellCode]=inv; });
+  return invMap;
+}
+
+// Theme picker events
+document.querySelectorAll('.tp-swatch').forEach(sw => {
+  sw.addEventListener('click', () => applyTheme(sw.dataset.theme));
+});
+
+// ==========================================================
+// INIT
+// ==========================================================
+async function init() {
+  await openDB();
+  await loadConfig();
+
+  // Load saved theme
+  try {
+    const savedTheme = localStorage.getItem('sm_theme');
+    if(savedTheme && THEMES.includes(savedTheme)) {
+      currentTheme = savedTheme;
+      if(savedTheme !== 'obsidian') document.documentElement.setAttribute('data-theme', savedTheme);
+      applyTheme3D(savedTheme);
+      document.querySelectorAll('.tp-swatch').forEach(s=>s.classList.toggle('active',s.dataset.theme===savedTheme));
+      const logoEl = document.querySelector('.logo');
+      if(logoEl){ const lc=getComputedStyle(document.documentElement).getPropertyValue('--logo-color').trim(); logoEl.style.color=lc; }
+    }
+  } catch(e){}
+
+  // Load saved inventory from IndexedDB
+  const saved = await dbGetAll('cells');
+  const invMap = {};
+  saved.forEach(r=>{ const { cellCode, ...inv } = r; invMap[cellCode]=inv; });
+
+  buildWarehouse(invMap);
+  animate();
+
+  setTimeout(()=>{
+    const ld=document.getElementById('loading');
+    ld.style.opacity='0';
+    setTimeout(()=>ld.style.display='none', 500);
+  }, 900);
+}
+
+init();
+</script>
+</body>
+</html>

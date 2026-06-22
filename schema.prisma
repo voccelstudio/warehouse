@@ -1,0 +1,210 @@
+// StockMap — Prisma Schema
+// Run: npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// MULTI-TENANT: cada cliente es un Workspace
+// ─────────────────────────────────────────
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  warehouses  Warehouse[]
+  connectors  Connector[]
+}
+
+// ─────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        Role     @default(OPERATOR)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  movements   Movement[]
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+  READONLY
+}
+
+// ─────────────────────────────────────────
+// WAREHOUSE & LAYOUT
+// ─────────────────────────────────────────
+model Warehouse {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  config      Json     // { rackUnits, bays, levels, cellW, cellH, cellD, ... }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id])
+  cells       Cell[]
+}
+
+model Cell {
+  id          String     @id @default(uuid())
+  cellCode    String     // "R01-B03-L2A"
+  rackUnit    Int
+  bay         Int
+  level       Int
+  side        String     // "A" | "B"
+  status      CellStatus @default(FREE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  warehouseId String
+  warehouse   Warehouse  @relation(fields: [warehouseId], references: [id])
+  inventory   Inventory?
+  movements   Movement[]
+
+  @@unique([warehouseId, cellCode])
+}
+
+enum CellStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+  BLOCKED
+}
+
+// ─────────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────────
+model Product {
+  id          String   @id @default(uuid())
+  sku         String   @unique
+  name        String
+  description String?
+  category    String?
+  barcode     String?
+  weight      Float?   // kg
+  supplier    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory   Inventory[]
+}
+
+model Inventory {
+  id           String    @id @default(uuid())
+  quantity     Int       @default(0)
+  maxCapacity  Int       @default(50)
+  entryDate    DateTime  @default(now())
+  expiryDate   DateTime?
+  destination  String?
+  orderRef     String?
+  notes        String?
+  updatedAt    DateTime  @updatedAt
+
+  cellId       String    @unique
+  cell         Cell      @relation(fields: [cellId], references: [id])
+
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// MOVEMENTS (audit log)
+// ─────────────────────────────────────────
+model Movement {
+  id          String       @id @default(uuid())
+  type        MovementType
+  quantity    Int
+  fromCellId  String?
+  toCellId    String?
+  notes       String?
+  createdAt   DateTime     @default(now())
+
+  cellId      String
+  cell        Cell         @relation(fields: [cellId], references: [id])
+
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+}
+
+enum MovementType {
+  ENTRY       // producto entra al depósito
+  EXIT        // producto sale del depósito
+  TRANSFER    // movimiento interno celda→celda
+  ADJUSTMENT  // corrección de inventario
+}
+
+// ─────────────────────────────────────────
+// CONNECTORS (configuración por workspace)
+// ─────────────────────────────────────────
+model Connector {
+  id          String          @id @default(uuid())
+  type        ConnectorType
+  name        String          // "ERP Principal", "Planilla Ventas", etc.
+  config      Json            // encrypted connection config
+  status      ConnectorStatus @default(INACTIVE)
+  lastSyncAt  DateTime?
+  lastError   String?
+  syncMode    SyncMode        @default(SCHEDULED)
+  syncInterval Int            @default(5) // minutes
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id])
+  syncLogs    SyncLog[]
+}
+
+enum ConnectorType {
+  SQL_POSTGRES
+  SQL_MYSQL
+  SQL_MSSQL
+  EXCEL
+  GOOGLE_SHEETS
+  POWER_BI
+}
+
+enum ConnectorStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  SYNCING
+}
+
+enum SyncMode {
+  REALTIME    // webhook / polling agresivo
+  SCHEDULED   // cada X minutos
+  MANUAL      // solo cuando el usuario lo pide
+}
+
+model SyncLog {
+  id           String    @id @default(uuid())
+  status       String    // "success" | "error" | "partial"
+  rowsRead     Int       @default(0)
+  rowsUpdated  Int       @default(0)
+  duration     Int       @default(0) // ms
+  error        String?
+  createdAt    DateTime  @default(now())
+
+  connectorId  String
+  connector    Connector @relation(fields: [connectorId], references: [id])
+}
