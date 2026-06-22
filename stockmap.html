@@ -492,6 +492,39 @@ html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); c
 .nd-icon { font-size:52px; margin-bottom:14px; opacity:.3; }
 .nd-title { font-size:24px; font-weight:900; letter-spacing:3px; color:var(--text-dim); margin-bottom:6px; }
 .nd-sub { font-family:var(--mono); font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+
+/* Search bar */
+#search-bar {
+  flex:1; max-width:220px; min-width:100px;
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--text); font-family:var(--mono); font-size:10px;
+  padding:5px 10px; letter-spacing:1px; outline:none;
+  transition:border-color .2s;
+}
+#search-bar:focus { border-color:var(--accent); }
+#search-bar::placeholder { color:var(--text-dim); text-transform:uppercase; }
+
+/* Qty adjust buttons */
+.qty-btn {
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  padding:2px 7px; border:1px solid var(--border2);
+  background:transparent; color:var(--text-dim);
+  cursor:pointer; transition:all .15s; line-height:1; min-width:28px;
+}
+.qty-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,.06); }
+.qty-btn.sub:hover { border-color:var(--red); color:var(--red); background:rgba(255,51,85,.06); }
+
+/* Panel edit field */
+.p-edit-input {
+  width:100%; background:var(--bg); border:1px solid var(--border2);
+  color:var(--text); font-family:var(--mono); font-size:11px;
+  padding:4px 8px; outline:none;
+}
+.p-edit-input:focus { border-color:var(--accent); }
+
+/* Toast variants */
+.toast-error { border-color:var(--red) !important; }
+.toast-ok    { border-color:var(--green) !important; }
 </style>
 </head>
 <body>
@@ -513,7 +546,9 @@ html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); c
     <div class="stat"><div class="dot" style="background:var(--red)"></div>VENCIDOS <b id="s-exd">—</b></div>
     <div class="stat"><div class="dot" style="background:var(--purple)"></div>RESERVADOS <b id="s-res">—</b></div>
   </div>
+  <input type="text" id="search-bar" placeholder="🔍 SKU o producto..." />
   <div id="topbar-actions">
+    <button class="tbtn" id="btn-export">↓ EXPORTAR</button>
     <button class="tbtn" id="btn-config">⚙ DEPÓSITO</button>
     <button class="tbtn" id="btn-mock">🧪 DATOS PRUEBA</button>
     <button class="tbtn primary" id="btn-import">↑ IMPORTAR EXCEL</button>
@@ -608,6 +643,17 @@ html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); c
     <div class="ps-label">LOGÍSTICA</div>
     <div class="dr"><span class="dk">Destino</span><span class="dv" id="p-dest">—</span></div>
     <div class="dr"><span class="dk">Orden</span><span class="dv" id="p-ord">—</span></div>
+  </div>
+  <div class="ps" id="panel-actions" style="display:none">
+    <div class="ps-label">ACCIONES</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="tbtn" id="btn-edit-cell" style="flex:1">✏ EDITAR</button>
+      <button class="tbtn danger" id="btn-free-cell" style="flex:1">🗑 LIBERAR</button>
+    </div>
+    <div style="margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--text-dim);text-align:center">
+      <span id="p-modified">—</span>
+      <button class="tbtn primary" id="btn-save-cell" style="display:none;width:100%;margin-top:6px">💾 GUARDAR CAMBIOS</button>
+    </div>
   </div>
 </div>
 
@@ -1417,6 +1463,272 @@ document.getElementById('btn-clear').addEventListener('click', async ()=>{
   await dbClear('cells');
   buildWarehouse({});
   showToast('🗑 Datos limpiados');
+});
+
+// ==========================================================
+// INVENTORY MANAGEMENT
+// ==========================================================
+
+// ── Search ────────────────────────────────
+let searchTimeout;
+
+document.getElementById('search-bar').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const q = this.value.trim().toLowerCase();
+    meshes.forEach(m => {
+      const ud = m.userData;
+      const inv = ud.inv || {};
+      const match = !q ||
+        (ud.cellCode && ud.cellCode.toLowerCase().includes(q)) ||
+        (inv.sku && inv.sku.toLowerCase().includes(q)) ||
+        (inv.productName && inv.productName.toLowerCase().includes(q)) ||
+        (inv.description && inv.description.toLowerCase().includes(q));
+      m.visible = match && (activeFilter === 'all' || ud.status === activeFilter);
+    });
+  }, 200);
+});
+
+// ── Export to CSV ─────────────────────────
+document.getElementById('btn-export').addEventListener('click', async () => {
+  const records = await dbGetAll('cells');
+  if (!records.length) { showToast('⚠ No hay datos para exportar'); return; }
+
+  const headers = ['cellCode','sku','productName','quantity','maxCapacity','expiryDate','supplier','category','weight','entryDate','destination','orderRef'];
+  const rows = records.map(r =>
+    headers.map(h => {
+      const v = r[h] !== undefined ? String(r[h]) : '';
+      return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g,'""')}"` : v;
+    }).join(',')
+  );
+
+  const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'stockmap-export-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ CSV exportado');
+});
+
+// ── Panel: edit mode ──────────────────────
+let editMode = false;
+let selectedCellCode = null;
+let selectedInv = null; // clone for editing
+
+document.getElementById('btn-edit-cell').addEventListener('click', () => {
+  editMode = !editMode;
+  renderPanelEditMode();
+});
+
+document.getElementById('btn-save-cell').addEventListener('click', async () => {
+  await saveCellChanges();
+});
+
+document.getElementById('btn-free-cell').addEventListener('click', async () => {
+  if (!selectedCellCode) return;
+  if (!confirm(`¿Liberar celda ${selectedCellCode}? Se borrará su inventario.`)) return;
+  await dbPut('cells', { cellCode: selectedCellCode });
+  await loadAllCellsAndRebuild();
+  document.getElementById('panel').classList.remove('open');
+  if (selMesh) { selMesh.scale.set(...scaleFor(selMesh,1)); selMesh = null; }
+  showToast(`🗑 Celda ${selectedCellCode} liberada`);
+});
+
+function renderPanelEditMode() {
+  const btn = document.getElementById('btn-edit-cell');
+  const saveBtn = document.getElementById('btn-save-cell');
+  const modified = document.getElementById('p-modified');
+
+  if (editMode) {
+    btn.textContent = '✕ CANCELAR';
+    btn.style.borderColor = 'var(--yellow)';
+    btn.style.color = 'var(--yellow)';
+    saveBtn.style.display = '';
+
+    // Replace text fields with inputs
+    const fields = [
+      { id:'p-sku2', key:'sku' },
+      { id:'p-name', key:'productName' },
+      { id:'p-cat',  key:'category' },
+      { id:'p-sup',  key:'supplier' },
+      { id:'p-bar2', key:'barcode' },
+      { id:'p-wgt',  key:'weight' },
+      { id:'p-dest', key:'destination' },
+      { id:'p-ord',  key:'orderRef' },
+    ];
+
+    let hasChanges = false;
+    modified.textContent = 'Editando…';
+
+    fields.forEach(({ id, key }) => {
+      const el = document.getElementById(id);
+      const val = (selectedInv && selectedInv[key] !== undefined) ? selectedInv[key] : '';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'p-edit-input';
+      input.value = val;
+      input.dataset.fieldKey = key;
+      input.addEventListener('input', () => {
+        selectedInv[key] = input.value;
+        hasChanges = true;
+      });
+      el.innerHTML = '';
+      el.appendChild(input);
+    });
+
+    // Expiry date
+    const expEl = document.getElementById('p-expd');
+    const expInput = document.createElement('input');
+    expInput.type = 'date';
+    expInput.className = 'p-edit-input';
+    const expVal = selectedInv?.expiryDate || '';
+    expInput.value = expVal ? expVal.slice(0,10) : '';
+    expInput.dataset.fieldKey = 'expiryDate';
+    expInput.addEventListener('input', () => {
+      selectedInv['expiryDate'] = expInput.value;
+      hasChanges = true;
+    });
+    expEl.innerHTML = '';
+    expEl.appendChild(expInput);
+
+    // Quantity inline edit
+    renderQtyEdit();
+
+    modified.textContent = '✏️ Modificá los campos y guardá';
+  } else {
+    btn.textContent = '✏ EDITAR';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    saveBtn.style.display = 'none';
+    modified.textContent = '—';
+    // Re-render the panel with current data
+    if (selectedCellCode && selectedInv) {
+      openPanel({ cellCode: selectedCellCode, ...getMeshData(selectedCellCode), inv: selectedInv });
+    }
+  }
+}
+
+function renderQtyEdit() {
+  const qtyEl = document.getElementById('p-qty');
+  const qty = (selectedInv && selectedInv.quantity !== undefined) ? parseInt(selectedInv.quantity) : 0;
+  const cap = (selectedInv && selectedInv.maxCapacity !== undefined) ? parseInt(selectedInv.maxCapacity) : 50;
+
+  qtyEl.innerHTML = `
+    <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+      <span id="p-qty-val" style="min-width:30px;text-align:right;font-weight:700">${qty}</span>
+      <span>/${cap}</span>
+      <span style="display:flex;gap:3px;margin-left:6px;">
+        <button class="qty-btn sub" data-delta="-5">-5</button>
+        <button class="qty-btn sub" data-delta="-1">-1</button>
+        <button class="qty-btn" data-delta="+1">+1</button>
+        <button class="qty-btn" data-delta="+5">+5</button>
+      </span>
+    </span>
+  `;
+
+  qtyEl.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const delta = parseInt(btn.dataset.delta);
+      adjustStock(delta);
+    });
+  });
+}
+
+function adjustStock(delta) {
+  if (!selectedInv) return;
+  let qty = parseInt(selectedInv.quantity) || 0;
+  const cap = parseInt(selectedInv.maxCapacity) || 50;
+  qty = Math.max(0, Math.min(cap, qty + delta));
+  selectedInv.quantity = qty;
+  document.getElementById('p-qty-val').textContent = qty;
+  updatePanelBar(qty, cap);
+  document.getElementById('p-modified').textContent = '⚠️ Sin guardar';
+  if (!editMode) {
+    // Auto-save when not in edit mode
+    saveCellChanges();
+  }
+}
+
+function updatePanelBar(qty, cap) {
+  const pct = cap > 0 ? Math.round((qty / cap) * 100) : 0;
+  const bar = document.getElementById('p-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--yellow)' : 'var(--green)';
+  document.getElementById('p-pct').textContent = pct + '%';
+}
+
+async function saveCellChanges() {
+  if (!selectedCellCode || !selectedInv) return;
+  await dbPut('cells', { cellCode: selectedCellCode, ...selectedInv });
+  await loadAllCellsAndRebuild();
+  const modified = document.getElementById('p-modified');
+  modified.textContent = '✅ Guardado';
+  modified.style.color = 'var(--green)';
+  setTimeout(() => { modified.style.color = ''; }, 2000);
+  showToast('💾 Cambios guardados');
+  if (editMode) {
+    editMode = false;
+    renderPanelEditMode();
+  }
+}
+
+function getMeshData(cellCode) {
+  const mesh = cellMap[cellCode];
+  if (!mesh) return {};
+  return mesh.userData || {};
+}
+
+async function loadAllCellsAndRebuild() {
+  const saved = await dbGetAll('cells');
+  const invMap = {};
+  saved.forEach(r => { const { cellCode, ...inv } = r; invMap[cellCode] = inv; });
+  buildWarehouse(invMap);
+  // Re-open panel if cell still exists
+  if (selectedCellCode && cellMap[selectedCellCode]) {
+    const mesh = cellMap[selectedCellCode];
+    openPanel(mesh.userData);
+  }
+}
+
+// ── Modify openPanel to show actions ──────
+const origOpenPanel = openPanel;
+openPanel = function(ud) {
+  origOpenPanel(ud);
+
+  const { cellCode, inv } = ud;
+  selectedCellCode = cellCode;
+  selectedInv = inv ? { ...inv } : {};
+  editMode = false;
+
+  const panelActions = document.getElementById('panel-actions');
+  const freeBtn = document.getElementById('btn-free-cell');
+
+  if (inv && inv.sku) {
+    panelActions.style.display = '';
+    freeBtn.style.display = '';
+    document.getElementById('btn-edit-cell').textContent = '✏ EDITAR';
+    document.getElementById('btn-edit-cell').style.borderColor = '';
+    document.getElementById('btn-edit-cell').style.color = '';
+    document.getElementById('btn-save-cell').style.display = 'none';
+
+    // Render qty adjust buttons (non-edit mode)
+    renderQtyEdit();
+  } else {
+    // Free cell — show only "ocupar" option
+    panelActions.style.display = 'none';
+  }
+};
+
+// Close panel handler
+document.getElementById('close-panel').addEventListener('click', () => {
+  document.getElementById('panel').classList.remove('open');
+  if (selMesh) { selMesh.scale.set(...scaleFor(selMesh,1)); selMesh = null; }
+  selectedCellCode = null;
+  selectedInv = null;
+  editMode = false;
 });
 
 // ==========================================================
