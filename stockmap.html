@@ -515,6 +515,7 @@ html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); c
   </div>
   <div id="topbar-actions">
     <button class="tbtn" id="btn-config">⚙ DEPÓSITO</button>
+    <button class="tbtn" id="btn-mock">🧪 DATOS PRUEBA</button>
     <button class="tbtn primary" id="btn-import">↑ IMPORTAR EXCEL</button>
     <button class="tbtn danger" id="btn-clear" style="display:none">✕ LIMPIAR</button>
   </div>
@@ -1298,6 +1299,115 @@ async function doImport() {
 
   setTimeout(()=>document.getElementById('modal-overlay').classList.remove('open'), 2200);
 }
+
+// ==========================================================
+// MOCK DATA
+// ==========================================================
+const MOCK_PRODUCTS = [
+  { sku:'FCL-001', name:'Filtro de aceite G1',         cat:'Filtros',       sup:'Mann Filter',     weight:0.35 },
+  { sku:'FCL-002', name:'Filtro de aceite G2',         cat:'Filtros',       sup:'Mann Filter',     weight:0.42 },
+  { sku:'FCL-003', name:'Filtro de aire cilíndrico',   cat:'Filtros',       sup:'Bosch',           weight:0.28 },
+  { sku:'FRN-001', name:'Pastilla de freno delantera',  cat:'Frenos',        sup:'Bosch',           weight:1.20 },
+  { sku:'FRN-002', name:'Pastilla de freno trasera',    cat:'Frenos',        sup:'Bosch',           weight:1.15 },
+  { sku:'FRN-003', name:'Disco de freno 280mm',         cat:'Frenos',        sup:'Brembo',          weight:5.80 },
+  { sku:'LUB-001', name:'Aceite motor 5W30 1L',         cat:'Lubricantes',   sup:'Shell',           weight:0.95 },
+  { sku:'LUB-002', name:'Aceite motor 10W40 1L',        cat:'Lubricantes',   sup:'Shell',           weight:0.95 },
+  { sku:'LUB-003', name:'Aceite transmisión 75W90',     cat:'Lubricantes',   sup:'Castrol',         weight:1.00 },
+  { sku:'LUB-004', name:'Grasa multipropósito 400g',    cat:'Lubricantes',   sup:'SKF',             weight:0.42 },
+  { sku:'ELC-001', name:'Bujía de encendido Iridium',   cat:'Encendido',     sup:'NGK',             weight:0.05 },
+  { sku:'ELC-002', name:'Bujía de encendido Cobre',     cat:'Encendido',     sup:'Bosch',           weight:0.05 },
+  { sku:'ELC-003', name:'Cable de bujía juego x4',      cat:'Encendido',     sup:'Bosch',           weight:0.30 },
+  { sku:'ELC-004', name:'Bobina de encendido',           cat:'Encendido',     sup:'Denso',           weight:0.55 },
+  { sku:'COR-001', name:'Correa de distribución',       cat:'Distribución',  sup:'Contitech',       weight:0.40 },
+  { sku:'COR-002', name:'Tensor de correa',             cat:'Distribución',  sup:'INA',             weight:0.65 },
+  { sku:'COR-003', name:'Bomba de agua',                 cat:'Distribución',  sup:'Gates',           weight:1.10 },
+  { sku:'SUS-001', name:'Amortiguador delantero',        cat:'Suspensión',    sup:'Monroe',          weight:3.20 },
+  { sku:'SUS-002', name:'Amortiguador trasero',          cat:'Suspensión',    sup:'Monroe',          weight:3.00 },
+  { sku:'SUS-003', name:'Brazo de suspensión',           cat:'Suspensión',    sup:'Lemförder',       weight:2.80 },
+  { sku:'ESC-001', name:'Escobilla limpiaparabrisas 20"',cat:'Limpieza',      sup:'Bosch',           weight:0.12 },
+  { sku:'ESC-002', name:'Escobilla limpiaparabrisas 22"',cat:'Limpieza',      sup:'Bosch',           weight:0.14 },
+  { sku:'ESC-003', name:'Líquido limpiaparabrisas 1L',   cat:'Limpieza',      sup:'Sonax',           weight:1.05 },
+  { sku:'ILM-001', name:'Farol delantero LED H7',        cat:'Iluminación',   sup:'Philips',         weight:0.18 },
+  { sku:'ILM-002', name:'Farol trasero LED P21',         cat:'Iluminación',   sup:'Osram',           weight:0.08 },
+  { sku:'ILM-003', name:'Lámpara interior LED',          cat:'Iluminación',   sup:'Philips',         weight:0.04 },
+  { sku:'BAT-001', name:'Batería 12V 60Ah',              cat:'Baterías',      sup:'Moura',           weight:12.50 },
+  { sku:'BAT-002', name:'Batería 12V 75Ah',              cat:'Baterías',      sup:'Heliar',          weight:14.00 },
+  { sku:'RAD-001', name:'Radiador de aluminio',          cat:'Refrigeración', sup:'Valeo',           weight:2.40 },
+  { sku:'RAD-002', name:'Termostato 82°C',               cat:'Refrigeración', sup:'Vernet',          weight:0.15 },
+  { sku:'RAD-003', name:'Manguera inferior radiador',    cat:'Refrigeración', sup:'Dayco',           weight:0.22 },
+  { sku:'EMP-001', name:'Empaque de tapa válvulas',      cat:'Empaques',      sup:'Victor Reinz',    weight:0.08 },
+  { sku:'EMP-002', name:'Empaque de múltiple admisión',  cat:'Empaques',      sup:'Victor Reinz',    weight:0.06 },
+  { sku:'ROD-001', name:'Rodamiento rueda delantera',    cat:'Rodamientos',   sup:'SKF',             weight:0.55 },
+  { sku:'ROD-002', name:'Rodamiento rueda trasera',      cat:'Rodamientos',   sup:'FAG',             weight:0.60 },
+  { sku:'TUR-001', name:'Turbo cargador GT17',           cat:'Turbo',         sup:'Garrett',         weight:6.20 },
+  { sku:'TUR-002', name:'Kit junta turbo',                cat:'Turbo',         sup:'Garrett',         weight:0.08 },
+  { sku:'EMB-001', name:'Disco de embrague 200mm',       cat:'Embrague',      sup:'Sachs',           weight:2.10 },
+  { sku:'EMB-002', name:'Plato presión de embrague',     cat:'Embrague',      sup:'Valeo',           weight:2.80 },
+  { sku:'EJE-001', name:'Cruceta de cardán',             cat:'Transmisión',   sup:'Spicer',          weight:0.90 },
+];
+
+function generateMockData() {
+  const totalCells = meshes.length;
+  if (!totalCells) { showToast('⚠ Configurá el depósito primero'); return; }
+
+  // Decide status distribution
+  const statuses = ['occupied','occupied','occupied','occupied','expiring','expired','reserved','free','free','free'];
+  const invMap = {};
+  let used = 0;
+
+  meshes.forEach((mesh, i) => {
+    const status = statuses[i % statuses.length];
+    if (status === 'free') return;
+
+    const prod = MOCK_PRODUCTS[used % MOCK_PRODUCTS.length];
+    used++;
+
+    const qty = Math.floor(Math.random() * 40) + 5;
+    const cap = 50;
+    const now = new Date();
+
+    let expiry;
+    if (status === 'expired') {
+      expiry = new Date(now.getTime() - Math.random() * 60 * 86400000); // 0-60 days ago
+    } else if (status === 'expiring') {
+      expiry = new Date(now.getTime() + Math.random() * 29 * 86400000); // 0-29 days
+    } else {
+      expiry = new Date(now.getTime() + (90 + Math.random() * 180) * 86400000); // 3-9 months
+    }
+
+    invMap[mesh.userData.cellCode] = {
+      sku: prod.sku,
+      productName: prod.name,
+      description: prod.name,
+      quantity: qty,
+      maxCapacity: cap,
+      expiryDate: expiry.toISOString(),
+      supplier: prod.sup,
+      category: prod.cat,
+      weight: prod.weight,
+      entryDate: new Date(now.getTime() - Math.random() * 120 * 86400000).toISOString(),
+      reserved: status === 'reserved' ? 'true' : undefined,
+      destination: status === 'reserved' ? 'Cliente Premium SRL' : undefined,
+      orderRef: status === 'reserved' ? 'ORD-RES-' + String(i).padStart(4,'0') : undefined,
+      lastMovement: new Date(now.getTime() - Math.random() * 10 * 86400000).toISOString(),
+    };
+  });
+
+  return invMap;
+}
+
+document.getElementById('btn-mock').addEventListener('click', async () => {
+  if (meshes.length === 0) {
+    showToast('⚠ Primero configurá el depósito (⚙ DEPÓSITO)');
+    return;
+  }
+  const invMap = generateMockData();
+  const records = Object.entries(invMap).map(([cellCode, inv]) => ({ cellCode, ...inv }));
+  await dbClear('cells');
+  await dbPutAll('cells', records);
+  buildWarehouse(invMap);
+  showToast(`🧪 ${records.length} celdas con datos de prueba`);
+});
 
 // ==========================================================
 // CLEAR DATA
